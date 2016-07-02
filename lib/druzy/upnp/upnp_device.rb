@@ -32,7 +32,6 @@ module Druzy
           
           uri = args[:uri]
           xml_nok = args[:xml]
-          #puts xml_nok
           @url_base = uri.scheme+'://'+uri.host+":"+uri.port.to_s
           @device_type = xml_nok.xpath('device/deviceType').text
           @friendly_name = xml_nok.xpath('device/friendlyName').text

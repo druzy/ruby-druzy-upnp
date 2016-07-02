@@ -58,7 +58,6 @@ module Druzy
             xml.remove_namespaces!
 
             result = {}
-            puts "avant hash"
             xml.xpath("Envelope/Body/"+action_name.to_s+"Response").children.each do |child|
               result[child.name.to_s] = child.text
             end
