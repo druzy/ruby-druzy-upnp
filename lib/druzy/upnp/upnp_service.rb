@@ -1,10 +1,17 @@
+require_relative 'event/upnp_event_server'
+
+require 'druzy/mvc/event'
+require 'druzy/utils/net'
 require 'net/http'
 require 'nokogiri'
+require 'socket'
 require 'uri'
 
 module Druzy
   module Upnp
     class UpnpService
+      
+      @@event_port = 15323
       
       attr_reader :service_type, :service_id, :location, :control_url, :event_sub_url
       
@@ -15,6 +22,8 @@ module Druzy
         @location = args[:location]
         @control_url = args[:control_url]
         @event_sub_url = args[:event_sub_url]
+        @event_timeout = 300
+        @event_sid = nil
         
         uri = URI(@location)
         xml=Net::HTTP.get(uri)
@@ -68,6 +77,84 @@ module Druzy
         end
         
       end
+      
+      def subscribe
+        if block_given?
+          server = Druzy::Upnp::Event::UpnpEventServer.instance(@@event_port)
+          uri = URI(@event_sub_url)
+          http = Net::HTTP.new(uri.host,uri.port)
+          request = Net::HTTPGenericRequest.new('SUBSCRIBE',false,true,uri)
+          request['CALLBACK'] = '<'+server.event_address+'>'
+          request['NT'] = 'upnp:event'
+          request['TIMEOUT'] = 'Second-'+@event_timeout.to_s
+          
+          response = http.request(request)
+          if response.code.to_i == 200
+            @event_timeout = response['TIMEOUT'][7..-1].to_i
+            @event_sid = response['SID']
+                      
+            Thread.new do
+              puts "début thread renew"
+              sleep @event_timeout
+              if @event_sid !=nil
+                renew_subscription
+              end
+            end
+                      
+            server.add_property_change_listener(@event_sid, Druzy::MVC::PropertyChangeListener.new do |event|
+              yield(event)
+            end)
+            return @event_sid
+          else
+            return nil
+          end
+        else 
+          return nil
+        end
+      end
+      
+      def renew_subscription
+        uri = URI(@event_sub_url)
+        http = Net::HTTP.new(uri.host,uri.port)
+        request = Net::HTTPGenericRequest.new('SUBSCRIBE',false,true,uri)
+        request['SID'] = @event_sid
+        request['TIMEOUT'] = 'Second-'+@event_timeout.to_s
+        
+        response = http.request(request)
+        if response.code.to_i == 200
+          @event_timeout = response['TIMEOUT'][7..-1].to_i
+
+          Thread.new do
+            sleep @event_timeout
+            if @event_sid !=nil
+              renew_subscription
+            end
+          end
+        end
+      end
+      
+      def unsubscribe
+        if @event_sid !=nil
+          server = Druzy::Upnp::Event::UpnpEventServer.instance(@@event_port)
+          server.remove_property_change_listener(@event_sid)
+          
+          uri = URI(@event_sub_url)
+          http = Net::HTTP.new(uri.host,uri.port)
+          request = Net::HTTPGenericRequest.new('UNSUBSCRIBE',false,true,nil)
+          request['SID'] = @event_sid
+          
+          response = http.request(request)
+          if response.code == 200
+            @event_sid = nil
+            return true
+          else
+            return false
+          end
+        else
+          return true
+        end
+      end
+      
     end
   end
 end

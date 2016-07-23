@@ -59,7 +59,13 @@ end
 if $0 == __FILE__
   Druzy::Upnp::Ssdp.new.search("urn:schemas-upnp-org:device:MediaRenderer:1") do |device|
     puts device.device_type
-    connection_id, av_transport_id, rcs_id = device.ConnectionManager.PrepareForConnection("RemoteProtocolInfo" => "http-get:*:video/mp4:*", "PeerConnectionManager" => "/", "PeerConnectionID" => -1, "Direction" => "Output").values
-    puts av_transport_id.to_s
+    device.service_list.each do |service|
+      puts service.service_type
+      service.subscribe do |event|
+        puts event.property_name+" : "+event.new_value
+      end
+    end
   end
+  
+  sleep 600
 end

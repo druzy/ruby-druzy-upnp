@@ -2,6 +2,7 @@ require_relative 'upnp_service'
 
 require 'net/http'
 require 'nokogiri'
+require 'uri'
 
 module Druzy
   module Upnp

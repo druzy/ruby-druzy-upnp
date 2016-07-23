@@ -1,6 +1,6 @@
 # Druzy::Upnp
 
-This is a upnp control point. You can search and interact with any upnp device or service.
+This is a upnp control point. You can search and interact with any upnp device or service and use event
 
 ## Installation
 
@@ -46,10 +46,16 @@ Druzy::Upnp::Ssdp.new.search do |device|
 end
 ```
 
+Event
+
+```ruby
+service.subscribe do |event|
+    puts event.property_name+" : "+event.new_value
+end
+
 ## Contributing
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/druzy/ruby-druzy-upnp.
-
 
 ## License
 
