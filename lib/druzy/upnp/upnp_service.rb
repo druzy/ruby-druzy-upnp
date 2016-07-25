@@ -94,7 +94,6 @@ module Druzy
             @event_sid = response['SID']
                       
             Thread.new do
-              puts "début thread renew"
               sleep @event_timeout
               if @event_sid !=nil
                 renew_subscription
