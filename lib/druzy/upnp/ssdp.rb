@@ -6,15 +6,18 @@ require 'timeout'
 
 module Druzy
   module Upnp
-    
+
     class Ssdp
+      MEDIA_RENDERER = "urn:schemas-upnp-org:device:MediaRenderer:1"
+      MEDIA_SERVER = "urn:schemas-upnp-org:device:MediaServer:1"
+
       @@port = 1900
       @@host = "239.255.255.250"
-      
+
       def initialize
-        
+
       end
-      
+
       #search only device (not service)
       def search(st = "ssdp:all", delay = 10)
         message = <<-MESSAGE
@@ -25,7 +28,7 @@ MX: #{delay}\r
 ST: #{st}\r
 USER-AGENT: #{RbConfig::CONFIG["host_os"]}/ UPnP/1.1 ruby-druzy-upnp/#{Druzy::Upnp::VERSION}\r
         MESSAGE
-        
+
         s = UDPSocket.new
         s.send(message,0,@@host,@@port)
         devices = []
@@ -44,20 +47,20 @@ USER-AGENT: #{RbConfig::CONFIG["host_os"]}/ UPnP/1.1 ruby-druzy-upnp/#{Druzy::Up
             end
           end
         rescue
-          
+
         ensure
           s.close
         end
-        
+
       end
-      
+
     end
-    
+
   end
 end
 
 if $0 == __FILE__
-  Druzy::Upnp::Ssdp.new.search("urn:schemas-upnp-org:device:MediaRenderer:1") do |device|
+  Druzy::Upnp::Ssdp.new.search(Druzy::Upnp::Ssdp::MEDIA_SERVER) do |device|
     puts device.device_type
     device.service_list.each do |service|
       puts service.service_type
@@ -66,6 +69,6 @@ if $0 == __FILE__
       end
     end
   end
-  
+
   sleep 600
 end
